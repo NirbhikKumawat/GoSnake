@@ -45,7 +45,6 @@ func NewGame(width, height int) *Game {
 	}
 	return g
 }
-
 func (g *Game) PlaceFood() {
 	width, height := g.Width, g.Height
 	var emptyCells []Point
@@ -64,6 +63,46 @@ func (g *Game) PlaceFood() {
 func CheckSnake(g *Game, point Point) bool {
 	for _, snakeHead := range g.Snake {
 		if snakeHead.X == point.X && snakeHead.Y == point.Y {
+			return true
+		}
+	}
+	return false
+}
+func (g *Game) Move() {
+	if g.GameOver {
+		return
+	}
+	newHead := Point{X: g.Snake[0].X + g.Direction.X, Y: g.Snake[0].Y + g.Direction.Y}
+
+	if g.CheckWallCollision(newHead) || g.SelfCollision(newHead) {
+		g.GameOver = true
+		return
+	}
+	g.Snake = append([]Point{newHead}, g.Snake...)
+	if g.Food.X == newHead.X && g.Food.Y == newHead.Y {
+		g.Score++
+		g.PlaceFood()
+	} else {
+		g.Snake = g.Snake[:len(g.Snake)-1]
+	}
+}
+func (g *Game) NextDirection(x, y int) Point {
+	directionx := g.Direction.X
+	directiony := g.Direction.Y
+	if directionx+x == 0 && directiony+y == 0 {
+		return g.Direction
+	}
+	return Point{X: x, Y: y}
+}
+func (g *Game) CheckWallCollision(p Point) bool {
+	if p.X < 0 || p.Y < 0 || p.X >= g.Width || p.Y >= g.Height {
+		return true
+	}
+	return false
+}
+func (g *Game) SelfCollision(p Point) bool {
+	for i := 1; i < len(g.Snake); i++ {
+		if p.X == g.Snake[i].X && p.Y == g.Snake[i].Y {
 			return true
 		}
 	}
