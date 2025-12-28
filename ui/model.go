@@ -7,12 +7,20 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type tickMsg time.Time
 type Model struct {
 	game *engine.Game
 }
+
+var (
+	foodStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#8B0000"))
+	snakeHeaderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
+	snakeStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+	nearbyStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF69B4"))
+)
 
 func doTick() tea.Cmd {
 	return tea.Tick(time.Millisecond*150, func(t time.Time) tea.Msg {
@@ -68,11 +76,16 @@ func (m Model) View() string {
 			grid[i][j] = "."
 		}
 	}
-	grid[g.Food.Y][g.Food.X] = "@"
+	if g.FoodNearby {
+		grid[g.Food.Y][g.Food.X] = nearbyStyle.Render("⬛")
+	} else {
+		grid[g.Food.Y][g.Food.X] = foodStyle.Render("⬛")
+	}
+
 	for index, part := range g.Snake {
-		char := "o"
+		char := snakeStyle.Render("⬛")
 		if index == 0 {
-			char = "O"
+			char = snakeHeaderStyle.Render("⬛")
 		}
 		grid[part.Y][part.X] = char
 	}

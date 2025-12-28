@@ -10,15 +10,28 @@ type Point struct {
 	Y int
 }
 type Game struct {
-	Width     int
-	Height    int
-	Food      Point
-	Snake     []Point
-	Direction Point
-	GameOver  bool
-	Score     int
+	Width      int
+	Height     int
+	Food       Point
+	Snake      []Point
+	Direction  Point
+	GameOver   bool
+	Score      int
+	FoodNearby bool
 }
 
+func absI(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+func maxI(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
 func NewGame(width, height int) *Game {
 	snakeHead := Point{X: width / 2, Y: height / 2}
 	g := &Game{
@@ -41,7 +54,8 @@ func NewGame(width, height int) *Game {
 				Y: snakeHead.Y,
 			},
 		},
-		Food: Point{snakeHead.X + 2, snakeHead.Y},
+		Food:       Point{snakeHead.X + 2, snakeHead.Y},
+		FoodNearby: true,
 	}
 	return g
 }
@@ -78,6 +92,11 @@ func (g *Game) Move() {
 		g.GameOver = true
 		return
 	}
+	if g.CheckFoodNearby(newHead) {
+		g.FoodNearby = true
+	} else {
+		g.FoodNearby = false
+	}
 	g.Snake = append([]Point{newHead}, g.Snake...)
 	if g.Food.X == newHead.X && g.Food.Y == newHead.Y {
 		g.Score++
@@ -105,6 +124,14 @@ func (g *Game) SelfCollision(p Point) bool {
 		if p.X == g.Snake[i].X && p.Y == g.Snake[i].Y {
 			return true
 		}
+	}
+	return false
+}
+func (g *Game) CheckFoodNearby(p Point) bool {
+	gx, gy := g.Food.X, g.Food.Y
+	px, py := p.X, p.Y
+	if maxI(absI(gx-px), absI(gy-py)) <= 3 {
+		return true
 	}
 	return false
 }
