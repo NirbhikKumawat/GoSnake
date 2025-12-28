@@ -20,9 +20,13 @@ func doTick() tea.Cmd {
 	})
 }
 
-func InitialModel() Model {
+func InitialModel(w, h int) Model {
+	if w < 5 || h < 5 {
+		w = 20
+		h = 20
+	}
 	return Model{
-		game: engine.NewGame(20, 20),
+		game: engine.NewGame(w, h),
 	}
 }
 func (m Model) Init() tea.Cmd {
@@ -73,6 +77,7 @@ func (m Model) View() string {
 		grid[part.Y][part.X] = char
 	}
 	var b strings.Builder
+	b.WriteString(fmt.Sprintf("\nScore: %d\n", g.Score))
 	for y := 0; y < m.game.Height; y++ {
 		for x := 0; x < m.game.Width; x++ {
 			b.WriteString(grid[y][x] + " ")
@@ -80,8 +85,7 @@ func (m Model) View() string {
 		b.WriteString("\n")
 	}
 	if g.GameOver {
-		b.WriteString("\nYou are over!\n\n")
+		b.WriteString("\nGame Over!\n")
 	}
-	b.WriteString(fmt.Sprintf("\nScore: %d", g.Score))
 	return b.String()
 }
