@@ -59,13 +59,13 @@ func NewGame(width, height int) *Game {
 	}
 	return g
 }
-func (g *Game) PlaceFood() {
+func (g *Game) placeFood() {
 	width, height := g.Width, g.Height
 	var emptyCells []Point
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
 			currentPoint := Point{X: x, Y: y}
-			if !CheckSnake(g, currentPoint) {
+			if !checkSnake(g, currentPoint) {
 				emptyCells = append(emptyCells, currentPoint)
 			}
 		}
@@ -74,7 +74,7 @@ func (g *Game) PlaceFood() {
 	randomIndex := rand.Intn(len(emptyCells))
 	g.Food = emptyCells[randomIndex]
 }
-func CheckSnake(g *Game, point Point) bool {
+func checkSnake(g *Game, point Point) bool {
 	for _, snakeHead := range g.Snake {
 		if snakeHead.X == point.X && snakeHead.Y == point.Y {
 			return true
@@ -88,11 +88,11 @@ func (g *Game) Move() {
 	}
 	newHead := Point{X: g.Snake[0].X + g.Direction.X, Y: g.Snake[0].Y + g.Direction.Y}
 
-	if g.CheckWallCollision(newHead) || g.SelfCollision(newHead) {
+	if g.checkWallCollision(newHead) || g.selfCollision(newHead) {
 		g.GameOver = true
 		return
 	}
-	if g.CheckFoodNearby(newHead) {
+	if g.checkFoodNearby(newHead) {
 		g.FoodNearby = true
 	} else {
 		g.FoodNearby = false
@@ -100,7 +100,7 @@ func (g *Game) Move() {
 	g.Snake = append([]Point{newHead}, g.Snake...)
 	if g.Food.X == newHead.X && g.Food.Y == newHead.Y {
 		g.Score++
-		g.PlaceFood()
+		g.placeFood()
 	} else {
 		g.Snake = g.Snake[:len(g.Snake)-1]
 	}
@@ -113,13 +113,13 @@ func (g *Game) NextDirection(x, y int) Point {
 	}
 	return Point{X: x, Y: y}
 }
-func (g *Game) CheckWallCollision(p Point) bool {
+func (g *Game) checkWallCollision(p Point) bool {
 	if p.X < 0 || p.Y < 0 || p.X >= g.Width || p.Y >= g.Height {
 		return true
 	}
 	return false
 }
-func (g *Game) SelfCollision(p Point) bool {
+func (g *Game) selfCollision(p Point) bool {
 	for i := 1; i < len(g.Snake); i++ {
 		if p.X == g.Snake[i].X && p.Y == g.Snake[i].Y {
 			return true
@@ -127,10 +127,10 @@ func (g *Game) SelfCollision(p Point) bool {
 	}
 	return false
 }
-func (g *Game) CheckFoodNearby(p Point) bool {
+func (g *Game) checkFoodNearby(p Point) bool {
 	gx, gy := g.Food.X, g.Food.Y
 	px, py := p.X, p.Y
-	if maxI(absI(gx-px), absI(gy-py)) <= 3 {
+	if maxI(absI(gx-px), absI(gy-py)) <= 2 {
 		return true
 	}
 	return false

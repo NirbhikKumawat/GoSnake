@@ -63,6 +63,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "left":
 			m.game.Direction = m.game.NextDirection(-1, 0)
 			return m, nil
+		case "r":
+			if m.game.GameOver {
+				m.game = engine.NewGame(m.game.Width, m.game.Height)
+				return m, doTick()
+			}
 		}
 	}
 	return m, nil
@@ -90,7 +95,7 @@ func (m Model) View() string {
 		grid[part.Y][part.X] = char
 	}
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("\nScore: %d\n", g.Score))
+	b.WriteString(fmt.Sprintf("\nScore: %d \n", g.Score))
 	for y := 0; y < m.game.Height; y++ {
 		for x := 0; x < m.game.Width; x++ {
 			b.WriteString(grid[y][x] + " ")
@@ -99,6 +104,7 @@ func (m Model) View() string {
 	}
 	if g.GameOver {
 		b.WriteString("\nGame Over!\n")
+		b.WriteString("Press r to restart the game.\n")
 	}
 	return b.String()
 }
