@@ -19,7 +19,7 @@ var (
 	foodStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#8B0000"))
 	snakeHeaderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
 	snakeStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	nearbyStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF69B4"))
+	nearbyStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#00008B"))
 )
 
 func doTick() tea.Cmd {
@@ -28,13 +28,13 @@ func doTick() tea.Cmd {
 	})
 }
 
-func InitialModel(w, h int) Model {
+func InitialModel(w, h, f int) Model {
 	if w < 5 || h < 5 {
 		w = 20
 		h = 20
 	}
 	return Model{
-		game: engine.NewGame(w, h),
+		game: engine.NewGame(w, h, f),
 	}
 }
 func (m Model) Init() tea.Cmd {
@@ -65,7 +65,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "r":
 			if m.game.GameOver {
-				m.game = engine.NewGame(m.game.Width, m.game.Height)
+				m.game = engine.NewGame(m.game.Width, m.game.Height, m.game.FoodCount)
 				return m, doTick()
 			}
 		}
@@ -81,16 +81,18 @@ func (m Model) View() string {
 			grid[i][j] = "."
 		}
 	}
-	if g.FoodNearby {
-		grid[g.Food.Y][g.Food.X] = nearbyStyle.Render("⬛")
-	} else {
-		grid[g.Food.Y][g.Food.X] = foodStyle.Render("⬛")
+	for _, fruit := range g.Food {
+		grid[fruit.Y][fruit.X] = foodStyle.Render("⬛")
 	}
 
 	for index, part := range g.Snake {
 		char := snakeStyle.Render("⬛")
 		if index == 0 {
-			char = snakeHeaderStyle.Render("⬛")
+			if !g.FoodNearby {
+				char = snakeHeaderStyle.Render("⬛")
+			} else {
+				char = nearbyStyle.Render("⬛")
+			}
 		}
 		grid[part.Y][part.X] = char
 	}

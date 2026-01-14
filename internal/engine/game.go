@@ -12,12 +12,13 @@ type Point struct {
 type Game struct {
 	Width      int
 	Height     int
-	Food       Point
+	Food       []Point
 	Snake      []Point
 	Direction  Point
 	GameOver   bool
 	Score      int
 	FoodNearby bool
+	FoodCount  int
 }
 
 func absI(x int) int {
@@ -32,8 +33,8 @@ func maxI(a, b int) int {
 	}
 	return b
 }
-func NewGame(width, height int) *Game {
-	snakeHead := Point{X: width / 2, Y: height / 2}
+func NewGame(width, height, count int) *Game {
+	snakeHead := Point{X: width/2 - 3, Y: height / 2}
 	g := &Game{
 		Width:    width,
 		Height:   height,
@@ -54,29 +55,52 @@ func NewGame(width, height int) *Game {
 				Y: snakeHead.Y,
 			},
 		},
-		Food:       Point{snakeHead.X + 2, snakeHead.Y},
+		FoodCount:  count,
+		Food:       []Point{{snakeHead.X + 7, snakeHead.Y}},
 		FoodNearby: true,
 	}
+	g.initialPlaceFoods()
 	return g
 }
-func (g *Game) placeFood() {
+func (g *Game) initialPlaceFoods() {
+	emptyCells := getEmptyCells(g)
+	for i := 0; i < g.FoodCount-1; i++ {
+		rand.NewSource(time.Now().UnixNano())
+		randomIndex := rand.Intn(len(emptyCells))
+		g.Food = append(g.Food, emptyCells[randomIndex])
+		emptyCells = append(emptyCells[:randomIndex], emptyCells[randomIndex+1:]...)
+	}
+}
+func getEmptyCells(g *Game) []Point {
 	width, height := g.Width, g.Height
 	var emptyCells []Point
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
 			currentPoint := Point{X: x, Y: y}
-			if !checkSnake(g, currentPoint) {
+			if !checkSnake(g, currentPoint) && !checkFood(g, currentPoint) {
 				emptyCells = append(emptyCells, currentPoint)
 			}
 		}
 	}
+	return emptyCells
+}
+func (g *Game) placeFood() {
+	emptyCells := getEmptyCells(g)
 	rand.NewSource(time.Now().UnixNano())
 	randomIndex := rand.Intn(len(emptyCells))
-	g.Food = emptyCells[randomIndex]
+	g.Food = append(g.Food, emptyCells[randomIndex])
 }
 func checkSnake(g *Game, point Point) bool {
 	for _, snakeHead := range g.Snake {
 		if snakeHead.X == point.X && snakeHead.Y == point.Y {
+			return true
+		}
+	}
+	return false
+}
+func checkFood(g *Game, point Point) bool {
+	for _, food := range g.Food {
+		if food.X == point.X && food.Y == point.Y {
 			return true
 		}
 	}
@@ -98,12 +122,22 @@ func (g *Game) Move() {
 		g.FoodNearby = false
 	}
 	g.Snake = append([]Point{newHead}, g.Snake...)
-	if g.Food.X == newHead.X && g.Food.Y == newHead.Y {
+	eaten, check := eatenFood(g.Food, newHead)
+	if check {
 		g.Score++
 		g.placeFood()
+		g.Food = append(g.Food[:eaten], g.Food[eaten+1:]...)
 	} else {
 		g.Snake = g.Snake[:len(g.Snake)-1]
 	}
+}
+func eatenFood(food []Point, point Point) (int, bool) {
+	for i, f := range food {
+		if f.X == point.X && f.Y == point.Y {
+			return i, true
+		}
+	}
+	return -1, false
 }
 func (g *Game) NextDirection(x, y int) Point {
 	directionx := g.Direction.X
@@ -128,10 +162,12 @@ func (g *Game) selfCollision(p Point) bool {
 	return false
 }
 func (g *Game) checkFoodNearby(p Point) bool {
-	gx, gy := g.Food.X, g.Food.Y
 	px, py := p.X, p.Y
-	if maxI(absI(gx-px), absI(gy-py)) <= 2 {
-		return true
+	for _, fruit := range g.Food {
+		gx, gy := fruit.X, fruit.Y
+		if maxI(absI(gx-px), absI(gy-py)) <= 2 {
+			return true
+		}
 	}
 	return false
 }
