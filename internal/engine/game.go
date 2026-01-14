@@ -10,15 +10,17 @@ type Point struct {
 	Y int
 }
 type Game struct {
-	Width      int
-	Height     int
-	Food       []Point
-	Snake      []Point
-	Direction  Point
-	GameOver   bool
-	Score      int
-	FoodNearby bool
-	FoodCount  int
+	Width              int
+	Height             int
+	Food               []Point
+	Snake              []Point
+	Direction          Point
+	GameOver           bool
+	Score              int
+	FoodNearby         bool
+	FoodCount          int
+	ShrinkingFruits    []Point
+	ShrinkingFoodCount int
 }
 
 func absI(x int) int {
@@ -33,7 +35,7 @@ func maxI(a, b int) int {
 	}
 	return b
 }
-func NewGame(width, height, count int) *Game {
+func NewGame(width, height, count, scount int) *Game {
 	snakeHead := Point{X: width/2 - 3, Y: height / 2}
 	g := &Game{
 		Width:    width,
@@ -55,11 +57,14 @@ func NewGame(width, height, count int) *Game {
 				Y: snakeHead.Y,
 			},
 		},
-		FoodCount:  count,
-		Food:       []Point{{snakeHead.X + 7, snakeHead.Y}},
-		FoodNearby: true,
+		ShrinkingFoodCount: scount,
+		ShrinkingFruits:    []Point{{snakeHead.X + 7, snakeHead.Y + 5}},
+		FoodCount:          count,
+		Food:               []Point{{snakeHead.X + 7, snakeHead.Y}},
+		FoodNearby:         true,
 	}
 	g.initialPlaceFoods()
+	g.initialPlaceShrinkingFoods()
 	return g
 }
 func (g *Game) initialPlaceFoods() {
@@ -71,13 +76,22 @@ func (g *Game) initialPlaceFoods() {
 		emptyCells = append(emptyCells[:randomIndex], emptyCells[randomIndex+1:]...)
 	}
 }
+func (g *Game) initialPlaceShrinkingFoods() {
+	emptyCells := getEmptyCells(g)
+	for i := 0; i < g.ShrinkingFoodCount-1; i++ {
+		rand.NewSource(time.Now().UnixNano())
+		randomIndex := rand.Intn(len(emptyCells))
+		g.ShrinkingFruits = append(g.ShrinkingFruits, emptyCells[randomIndex])
+		emptyCells = append(emptyCells[:randomIndex], emptyCells[randomIndex+1:]...)
+	}
+}
 func getEmptyCells(g *Game) []Point {
 	width, height := g.Width, g.Height
 	var emptyCells []Point
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
 			currentPoint := Point{X: x, Y: y}
-			if !checkSnake(g, currentPoint) && !checkFood(g, currentPoint) {
+			if !checkSnake(g, currentPoint) && !checkFood(g, currentPoint) && !checkShrinkingFruit(g, currentPoint) {
 				emptyCells = append(emptyCells, currentPoint)
 			}
 		}
@@ -90,9 +104,23 @@ func (g *Game) placeFood() {
 	randomIndex := rand.Intn(len(emptyCells))
 	g.Food = append(g.Food, emptyCells[randomIndex])
 }
+func (g *Game) placeShrinkingFruit() {
+	emptyCells := getEmptyCells(g)
+	rand.NewSource(time.Now().UnixNano())
+	randomIndex := rand.Intn(len(emptyCells))
+	g.ShrinkingFruits = append(g.ShrinkingFruits, emptyCells[randomIndex])
+}
 func checkSnake(g *Game, point Point) bool {
 	for _, snakeHead := range g.Snake {
 		if snakeHead.X == point.X && snakeHead.Y == point.Y {
+			return true
+		}
+	}
+	return false
+}
+func checkShrinkingFruit(g *Game, point Point) bool {
+	for _, sfruit := range g.ShrinkingFruits {
+		if sfruit.X == point.X && sfruit.Y == point.Y {
 			return true
 		}
 	}
@@ -130,6 +158,17 @@ func (g *Game) Move() {
 	} else {
 		g.Snake = g.Snake[:len(g.Snake)-1]
 	}
+	seaten, scheck := eatenFood(g.ShrinkingFruits, newHead)
+	if scheck {
+		g.Score--
+		g.placeShrinkingFruit()
+		g.ShrinkingFruits = append(g.ShrinkingFruits[:seaten], g.ShrinkingFruits[seaten+1:]...)
+		g.Snake = g.Snake[:len(g.Snake)-1]
+	}
+	if len(g.Snake) == 0 {
+		g.GameOver = true
+	}
+
 }
 func eatenFood(food []Point, point Point) (int, bool) {
 	for i, f := range food {

@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	W         int
-	H         int
-	FoodCount int
+	W                  int
+	H                  int
+	FoodCount          int
+	ShrinkingFoodCount int
 )
 
 var RootCmd = &cobra.Command{
@@ -23,7 +24,7 @@ var RootCmd = &cobra.Command{
 }
 
 func NewGame(_ *cobra.Command, _ []string) {
-	p := tea.NewProgram(ui.InitialModel(W, H, FoodCount))
+	p := tea.NewProgram(ui.InitialModel(W, H, FoodCount, ShrinkingFoodCount))
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 	}
@@ -37,4 +38,5 @@ func init() {
 	RootCmd.Flags().IntVarP(&W, "width", "W", 20, "the width of the game")
 	RootCmd.Flags().IntVarP(&H, "height", "H", 20, "the height of the game")
 	RootCmd.Flags().IntVarP(&FoodCount, "food", "f", 1, "the food count")
+	RootCmd.Flags().IntVarP(&ShrinkingFoodCount, "shrinking", "s", 1, "the shrinking food count")
 }
