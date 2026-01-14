@@ -21,6 +21,7 @@ type Game struct {
 	FoodCount          int
 	ShrinkingFruits    []Point
 	ShrinkingFoodCount int
+	DirectionQueue     []Point
 }
 
 func absI(x int) int {
@@ -178,13 +179,12 @@ func eatenFood(food []Point, point Point) (int, bool) {
 	}
 	return -1, false
 }
-func (g *Game) NextDirection(x, y int) Point {
+func (g *Game) UpdateDirectionQueue(x, y int) {
 	directionx := g.Direction.X
 	directiony := g.Direction.Y
-	if directionx+x == 0 && directiony+y == 0 {
-		return g.Direction
+	if directionx+x != 0 || directiony+y != 0 && g.Direction != g.Direction && len(g.DirectionQueue) < 3 {
+		g.DirectionQueue = append(g.DirectionQueue, Point{X: x, Y: y})
 	}
-	return Point{X: x, Y: y}
 }
 func (g *Game) checkWallCollision(p Point) bool {
 	if p.X < 0 || p.Y < 0 || p.X >= g.Width || p.Y >= g.Height {

@@ -45,6 +45,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tickMsg:
 		if !m.game.GameOver {
+			if len(m.game.DirectionQueue) > 0 {
+				m.game.Direction = m.game.DirectionQueue[0]
+				m.game.DirectionQueue = m.game.DirectionQueue[1:]
+			}
 			m.game.Move()
 			return m, doTick()
 		}
@@ -53,16 +57,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "up":
-			m.game.Direction = m.game.NextDirection(0, -1)
+			//m.game.Direction = m.game.NextDirection(0, -1)
+			m.game.UpdateDirectionQueue(0, -1)
 			return m, nil
 		case "down":
-			m.game.Direction = m.game.NextDirection(0, 1)
+			//m.game.Direction = m.game.NextDirection(0, 1)
+			m.game.UpdateDirectionQueue(0, 1)
 			return m, nil
 		case "right":
-			m.game.Direction = m.game.NextDirection(1, 0)
+			//m.game.Direction = m.game.NextDirection(1, 0)
+			m.game.UpdateDirectionQueue(1, 0)
 			return m, nil
 		case "left":
-			m.game.Direction = m.game.NextDirection(-1, 0)
+			//m.game.Direction = m.game.NextDirection(-1, 0)
+			m.game.UpdateDirectionQueue(-1, 0)
 			return m, nil
 		case "r":
 			if m.game.GameOver {
