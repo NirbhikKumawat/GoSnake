@@ -22,6 +22,7 @@ var (
 	nearbyStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#00008B"))
 	sfoodStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
 	portalFoodStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("15"))
+	blockStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("#8B5E3C"))
 )
 
 func doTick() tea.Cmd {
@@ -96,6 +97,9 @@ func (m Model) View() string {
 	for _, pfruit := range g.PortalFruits {
 		grid[pfruit[0].Y][pfruit[0].X] = portalFoodStyle.Render("⬛")
 		grid[pfruit[1].Y][pfruit[1].X] = portalFoodStyle.Render("⬛")
+	}
+	for _, block := range g.Blocks {
+		grid[block.Y][block.X] = blockStyle.Render("⬛")
 	}
 
 	for index, part := range g.Snake {

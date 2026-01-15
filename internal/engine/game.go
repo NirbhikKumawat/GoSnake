@@ -25,6 +25,7 @@ type Game struct {
 	ShrinkingFoodCount  int
 	DirectionQueue      []Point
 	PortalFruits        [][2]Point
+	Blocks              []Point
 }
 
 func absI(x int) int {
@@ -96,7 +97,7 @@ func getEmptyCells(g *Game) []Point {
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
 			currentPoint := Point{X: x, Y: y}
-			if !checkSnake(g, currentPoint) && !checkFood(g, currentPoint) && !checkShrinkingFruit(g, currentPoint) && !checkPortalFoods(g, currentPoint) {
+			if !checkSnake(g, currentPoint) && !checkFood(g, currentPoint) && !checkShrinkingFruit(g, currentPoint) && !checkPortalFoods(g, currentPoint) && !checkBlocks(g, currentPoint) {
 				emptyCells = append(emptyCells, currentPoint)
 			}
 		}
@@ -124,6 +125,12 @@ func (g *Game) placeShrinkingFruit() {
 	rand.NewSource(time.Now().UnixNano())
 	randomIndex := rand.Intn(len(emptyCells))
 	g.ShrinkingFruits = append(g.ShrinkingFruits, emptyCells[randomIndex])
+}
+func (g *Game) placeBlocks() {
+	emptyCells := getEmptyCells(g)
+	rand.NewSource(time.Now().UnixNano())
+	randomIndex := rand.Intn(len(emptyCells))
+	g.Blocks = append(g.Blocks, emptyCells[randomIndex])
 }
 func checkSnake(g *Game, point Point) bool {
 	for _, snakeHead := range g.Snake {
@@ -160,6 +167,14 @@ func checkPortalFoods(g *Game, point Point) bool {
 	}
 	return false
 }
+func checkBlocks(g *Game, point Point) bool {
+	for _, block := range g.Blocks {
+		if block.X == point.X && block.Y == point.Y {
+			return true
+		}
+	}
+	return false
+}
 func (g *Game) Move() {
 	if g.GameOver {
 		return
@@ -177,9 +192,15 @@ func (g *Game) Move() {
 	}
 	g.Snake = append([]Point{newHead}, g.Snake...)
 	eaten, check := eatenFood(g.Food, newHead)
+	if checkBlocks(g, newHead) {
+		g.GameOver = true
+	}
 	if check {
 		g.Score++
 		g.placeFood()
+		if g.Score%2 == 0 {
+			g.placeBlocks()
+		}
 		g.Food = append(g.Food[:eaten], g.Food[eaten+1:]...)
 	}
 	seaten, scheck := eatenFood(g.ShrinkingFruits, newHead)
@@ -196,10 +217,12 @@ func (g *Game) Move() {
 	if pcheck {
 		g.Score++
 		g.placePortalFruits()
+		if g.Score%2 == 0 {
+			g.placeBlocks()
+		}
 		newHead := Point{X: g.PortalFruits[peaten][p].X, Y: g.PortalFruits[peaten][p].Y}
 		g.Snake = append([]Point{newHead}, g.Snake[1:]...)
 		g.PortalFruits = append(g.PortalFruits[:peaten], g.PortalFruits[peaten+1:]...)
-
 	}
 	if !check && !pcheck {
 		g.Snake = g.Snake[:len(g.Snake)-1]
