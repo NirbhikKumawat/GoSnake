@@ -10,18 +10,21 @@ type Point struct {
 	Y int
 }
 type Game struct {
-	Width              int
-	Height             int
-	Food               []Point
-	Snake              []Point
-	Direction          Point
-	GameOver           bool
-	Score              int
-	FoodNearby         bool
-	FoodCount          int
-	ShrinkingFruits    []Point
-	ShrinkingFoodCount int
-	DirectionQueue     []Point
+	Width               int
+	Height              int
+	Food                []Point
+	Snake               []Point
+	Direction           Point
+	GameOver            bool
+	Score               int
+	FoodNearby          bool
+	FoodCount           int
+	EnableShrinkingFood bool
+	EnablePortalFood    bool
+	ShrinkingFruits     []Point
+	ShrinkingFoodCount  int
+	DirectionQueue      []Point
+	PortalFruits        [][2]Point
 }
 
 func absI(x int) int {
@@ -58,6 +61,7 @@ func NewGame(width, height, count, scount int) *Game {
 				Y: snakeHead.Y,
 			},
 		},
+		PortalFruits:       [][2]Point{{{snakeHead.X + 7, snakeHead.Y + 3}, {snakeHead.X + 7, snakeHead.Y - 3}}},
 		ShrinkingFoodCount: scount,
 		ShrinkingFruits:    []Point{{snakeHead.X + 7, snakeHead.Y + 5}},
 		FoodCount:          count,
@@ -92,7 +96,7 @@ func getEmptyCells(g *Game) []Point {
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
 			currentPoint := Point{X: x, Y: y}
-			if !checkSnake(g, currentPoint) && !checkFood(g, currentPoint) && !checkShrinkingFruit(g, currentPoint) {
+			if !checkSnake(g, currentPoint) && !checkFood(g, currentPoint) && !checkShrinkingFruit(g, currentPoint) && !checkPortalFoods(g, currentPoint) {
 				emptyCells = append(emptyCells, currentPoint)
 			}
 		}
@@ -104,6 +108,16 @@ func (g *Game) placeFood() {
 	rand.NewSource(time.Now().UnixNano())
 	randomIndex := rand.Intn(len(emptyCells))
 	g.Food = append(g.Food, emptyCells[randomIndex])
+}
+func (g *Game) placePortalFruits() {
+	emptyCells := getEmptyCells(g)
+	rand.NewSource(time.Now().UnixNano())
+	randomIndex1 := rand.Intn(len(emptyCells))
+	cell1 := emptyCells[randomIndex1]
+	emptyCells = append(emptyCells[:randomIndex1], emptyCells[randomIndex1+1:]...)
+	randomIndex2 := rand.Intn(len(emptyCells))
+	cell2 := emptyCells[randomIndex2]
+	g.PortalFruits = append(g.PortalFruits, [2]Point{cell1, cell2})
 }
 func (g *Game) placeShrinkingFruit() {
 	emptyCells := getEmptyCells(g)
@@ -135,6 +149,17 @@ func checkFood(g *Game, point Point) bool {
 	}
 	return false
 }
+func checkPortalFoods(g *Game, point Point) bool {
+	for _, food := range g.PortalFruits {
+		if food[0].X == point.X && food[0].Y == point.Y {
+			return true
+		}
+		if food[1].X == point.X && food[1].Y == point.Y {
+			return true
+		}
+	}
+	return false
+}
 func (g *Game) Move() {
 	if g.GameOver {
 		return
@@ -156,8 +181,6 @@ func (g *Game) Move() {
 		g.Score++
 		g.placeFood()
 		g.Food = append(g.Food[:eaten], g.Food[eaten+1:]...)
-	} else {
-		g.Snake = g.Snake[:len(g.Snake)-1]
 	}
 	seaten, scheck := eatenFood(g.ShrinkingFruits, newHead)
 	if scheck {
@@ -169,6 +192,18 @@ func (g *Game) Move() {
 	if len(g.Snake) == 0 {
 		g.GameOver = true
 	}
+	p, peaten, pcheck := eatenPortalFood(g.PortalFruits, newHead)
+	if pcheck {
+		g.Score++
+		g.placePortalFruits()
+		newHead := Point{X: g.PortalFruits[peaten][p].X, Y: g.PortalFruits[peaten][p].Y}
+		g.Snake = append([]Point{newHead}, g.Snake[1:]...)
+		g.PortalFruits = append(g.PortalFruits[:peaten], g.PortalFruits[peaten+1:]...)
+
+	}
+	if !check && !pcheck {
+		g.Snake = g.Snake[:len(g.Snake)-1]
+	}
 
 }
 func eatenFood(food []Point, point Point) (int, bool) {
@@ -178,6 +213,17 @@ func eatenFood(food []Point, point Point) (int, bool) {
 		}
 	}
 	return -1, false
+}
+func eatenPortalFood(foods [][2]Point, point Point) (int, int, bool) {
+	for i, food := range foods {
+		if food[0].X == point.X && food[0].Y == point.Y {
+			return 1, i, true
+		}
+		if food[1].X == point.X && food[1].Y == point.Y {
+			return 0, i, true
+		}
+	}
+	return -1, -1, false
 }
 func (g *Game) UpdateDirectionQueue(x, y int) {
 	directionx := g.Direction.X

@@ -21,6 +21,7 @@ var (
 	snakeStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
 	nearbyStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#00008B"))
 	sfoodStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
+	portalFoodStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("15"))
 )
 
 func doTick() tea.Cmd {
@@ -57,19 +58,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "up":
-			//m.game.Direction = m.game.NextDirection(0, -1)
 			m.game.UpdateDirectionQueue(0, -1)
 			return m, nil
 		case "down":
-			//m.game.Direction = m.game.NextDirection(0, 1)
 			m.game.UpdateDirectionQueue(0, 1)
 			return m, nil
 		case "right":
-			//m.game.Direction = m.game.NextDirection(1, 0)
 			m.game.UpdateDirectionQueue(1, 0)
 			return m, nil
 		case "left":
-			//m.game.Direction = m.game.NextDirection(-1, 0)
 			m.game.UpdateDirectionQueue(-1, 0)
 			return m, nil
 		case "r":
@@ -95,6 +92,10 @@ func (m Model) View() string {
 	}
 	for _, sfruit := range g.ShrinkingFruits {
 		grid[sfruit.Y][sfruit.X] = sfoodStyle.Render("⬛")
+	}
+	for _, pfruit := range g.PortalFruits {
+		grid[pfruit[0].Y][pfruit[0].X] = portalFoodStyle.Render("⬛")
+		grid[pfruit[1].Y][pfruit[1].X] = portalFoodStyle.Render("⬛")
 	}
 
 	for index, part := range g.Snake {
