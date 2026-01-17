@@ -21,6 +21,8 @@ type Game struct {
 	DirectionQueue      []Point
 	PortalFruits        [][2]Point
 	Blocks              []Point
+	WallCollision       bool
+	SnakeCollision      bool
 }
 
 func absI(x int) int {
@@ -35,7 +37,7 @@ func maxI(a, b int) int {
 	}
 	return b
 }
-func NewGame(width, height, count, scount int) *Game {
+func NewGame(width, height, count, scount int, wallCollision, snakeCollision bool) *Game {
 	snakeHead := Point{X: width/2 - 3, Y: height / 2}
 	g := &Game{
 		Width:    width,
@@ -63,6 +65,8 @@ func NewGame(width, height, count, scount int) *Game {
 		FoodCount:          count,
 		Food:               []Point{{snakeHead.X + 7, snakeHead.Y}},
 		FoodNearby:         true,
+		WallCollision:      wallCollision,
+		SnakeCollision:     snakeCollision,
 	}
 	g.initialPlaceFoods()
 	g.initialPlaceShrinkingFoods()
@@ -95,9 +99,27 @@ func (g *Game) Move() {
 	}
 	newHead := Point{X: g.Snake[0].X + g.Direction.X, Y: g.Snake[0].Y + g.Direction.Y}
 
-	if g.checkWallCollision(newHead) || g.selfCollision(newHead) {
+	if g.selfCollision(newHead) && !g.SnakeCollision {
 		g.GameOver = true
 		return
+	}
+	if !g.WallCollision && g.checkWallCollision(newHead) {
+		g.GameOver = true
+		return
+	}
+	if g.WallCollision {
+		if newHead.X == -1 {
+			newHead.X = g.Width - 1
+		}
+		if newHead.Y == -1 {
+			newHead.Y = g.Height - 1
+		}
+		if newHead.X == g.Width {
+			newHead.X = 0
+		}
+		if newHead.Y == g.Height {
+			newHead.Y = 0
+		}
 	}
 	if g.checkFoodNearby(newHead) {
 		g.FoodNearby = true

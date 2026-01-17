@@ -31,13 +31,13 @@ func doTick() tea.Cmd {
 	})
 }
 
-func InitialModel(w, h, f, sf int) Model {
+func InitialModel(w, h, f, sf int, wc, sc bool) Model {
 	if w < 5 || h < 5 {
 		w = 20
 		h = 20
 	}
 	return Model{
-		game: engine.NewGame(w, h, f, sf),
+		game: engine.NewGame(w, h, f, sf, wc, sc),
 	}
 }
 func (m Model) Init() tea.Cmd {
@@ -72,7 +72,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "r":
 			if m.game.GameOver {
-				m.game = engine.NewGame(m.game.Width, m.game.Height, m.game.FoodCount, m.game.ShrinkingFoodCount)
+				m.game = engine.NewGame(m.game.Width, m.game.Height, m.game.FoodCount, m.game.ShrinkingFoodCount, m.game.WallCollision, m.game.SnakeCollision)
 				return m, doTick()
 			}
 		}
@@ -102,17 +102,16 @@ func (m Model) View() string {
 		grid[block.Y][block.X] = blockStyle.Render("⬛")
 	}
 
-	for index, part := range g.Snake {
+	for _, part := range g.Snake[1:] {
 		char := snakeStyle.Render("⬛")
-		if index == 0 {
-			if !g.FoodNearby {
-				char = snakeHeaderStyle.Render("⬛")
-			} else {
-				char = nearbyStyle.Render("⬛")
-			}
-		}
 		grid[part.Y][part.X] = char
 	}
+	if !g.FoodNearby {
+		grid[g.Snake[0].Y][g.Snake[0].X] = snakeHeaderStyle.Render("⬛")
+	} else {
+		grid[g.Snake[0].Y][g.Snake[0].X] = nearbyStyle.Render("⬛")
+	}
+
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("\nScore: %d \n", g.Score))
 	for y := 0; y < m.game.Height; y++ {
