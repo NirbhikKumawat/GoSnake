@@ -1,10 +1,5 @@
 package engine
 
-import (
-	"math/rand"
-	"time"
-)
-
 type Point struct {
 	X int
 	Y int
@@ -73,24 +68,6 @@ func NewGame(width, height, count, scount int) *Game {
 	g.initialPlaceShrinkingFoods()
 	return g
 }
-func (g *Game) initialPlaceFoods() {
-	emptyCells := getEmptyCells(g)
-	for i := 0; i < g.FoodCount-1; i++ {
-		rand.NewSource(time.Now().UnixNano())
-		randomIndex := rand.Intn(len(emptyCells))
-		g.Food = append(g.Food, emptyCells[randomIndex])
-		emptyCells = append(emptyCells[:randomIndex], emptyCells[randomIndex+1:]...)
-	}
-}
-func (g *Game) initialPlaceShrinkingFoods() {
-	emptyCells := getEmptyCells(g)
-	for i := 0; i < g.ShrinkingFoodCount-1; i++ {
-		rand.NewSource(time.Now().UnixNano())
-		randomIndex := rand.Intn(len(emptyCells))
-		g.ShrinkingFruits = append(g.ShrinkingFruits, emptyCells[randomIndex])
-		emptyCells = append(emptyCells[:randomIndex], emptyCells[randomIndex+1:]...)
-	}
-}
 func getEmptyCells(g *Game) []Point {
 	width, height := g.Width, g.Height
 	var emptyCells []Point
@@ -104,72 +81,9 @@ func getEmptyCells(g *Game) []Point {
 	}
 	return emptyCells
 }
-func (g *Game) placeFood() {
-	emptyCells := getEmptyCells(g)
-	rand.NewSource(time.Now().UnixNano())
-	randomIndex := rand.Intn(len(emptyCells))
-	g.Food = append(g.Food, emptyCells[randomIndex])
-}
-func (g *Game) placePortalFruits() {
-	emptyCells := getEmptyCells(g)
-	rand.NewSource(time.Now().UnixNano())
-	randomIndex1 := rand.Intn(len(emptyCells))
-	cell1 := emptyCells[randomIndex1]
-	emptyCells = append(emptyCells[:randomIndex1], emptyCells[randomIndex1+1:]...)
-	randomIndex2 := rand.Intn(len(emptyCells))
-	cell2 := emptyCells[randomIndex2]
-	g.PortalFruits = append(g.PortalFruits, [2]Point{cell1, cell2})
-}
-func (g *Game) placeShrinkingFruit() {
-	emptyCells := getEmptyCells(g)
-	rand.NewSource(time.Now().UnixNano())
-	randomIndex := rand.Intn(len(emptyCells))
-	g.ShrinkingFruits = append(g.ShrinkingFruits, emptyCells[randomIndex])
-}
-func (g *Game) placeBlocks() {
-	emptyCells := getEmptyCells(g)
-	rand.NewSource(time.Now().UnixNano())
-	randomIndex := rand.Intn(len(emptyCells))
-	g.Blocks = append(g.Blocks, emptyCells[randomIndex])
-}
 func checkSnake(g *Game, point Point) bool {
 	for _, snakeHead := range g.Snake {
 		if snakeHead.X == point.X && snakeHead.Y == point.Y {
-			return true
-		}
-	}
-	return false
-}
-func checkShrinkingFruit(g *Game, point Point) bool {
-	for _, sfruit := range g.ShrinkingFruits {
-		if sfruit.X == point.X && sfruit.Y == point.Y {
-			return true
-		}
-	}
-	return false
-}
-func checkFood(g *Game, point Point) bool {
-	for _, food := range g.Food {
-		if food.X == point.X && food.Y == point.Y {
-			return true
-		}
-	}
-	return false
-}
-func checkPortalFoods(g *Game, point Point) bool {
-	for _, food := range g.PortalFruits {
-		if food[0].X == point.X && food[0].Y == point.Y {
-			return true
-		}
-		if food[1].X == point.X && food[1].Y == point.Y {
-			return true
-		}
-	}
-	return false
-}
-func checkBlocks(g *Game, point Point) bool {
-	for _, block := range g.Blocks {
-		if block.X == point.X && block.Y == point.Y {
 			return true
 		}
 	}
@@ -229,25 +143,6 @@ func (g *Game) Move() {
 	}
 
 }
-func eatenFood(food []Point, point Point) (int, bool) {
-	for i, f := range food {
-		if f.X == point.X && f.Y == point.Y {
-			return i, true
-		}
-	}
-	return -1, false
-}
-func eatenPortalFood(foods [][2]Point, point Point) (int, int, bool) {
-	for i, food := range foods {
-		if food[0].X == point.X && food[0].Y == point.Y {
-			return 1, i, true
-		}
-		if food[1].X == point.X && food[1].Y == point.Y {
-			return 0, i, true
-		}
-	}
-	return -1, -1, false
-}
 func (g *Game) UpdateDirectionQueue(x, y int) {
 	directionx := g.Direction.X
 	directiony := g.Direction.Y
@@ -264,16 +159,6 @@ func (g *Game) checkWallCollision(p Point) bool {
 func (g *Game) selfCollision(p Point) bool {
 	for i := 1; i < len(g.Snake); i++ {
 		if p.X == g.Snake[i].X && p.Y == g.Snake[i].Y {
-			return true
-		}
-	}
-	return false
-}
-func (g *Game) checkFoodNearby(p Point) bool {
-	px, py := p.X, p.Y
-	for _, fruit := range g.Food {
-		gx, gy := fruit.X, fruit.Y
-		if maxI(absI(gx-px), absI(gy-py)) <= 2 {
 			return true
 		}
 	}
