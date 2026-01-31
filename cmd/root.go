@@ -16,6 +16,8 @@ var (
 	ShrinkingFoodCount int
 	WallCollision      bool
 	SelfCollision      bool
+	ReverseDirection   bool
+	SpawnBlocks        bool
 )
 
 var RootCmd = &cobra.Command{
@@ -26,7 +28,7 @@ var RootCmd = &cobra.Command{
 }
 
 func NewGame(_ *cobra.Command, _ []string) {
-	p := tea.NewProgram(ui.InitialModel(W, H, FoodCount, ShrinkingFoodCount, WallCollision, SelfCollision))
+	p := tea.NewProgram(ui.InitialModel(W, H, FoodCount, ShrinkingFoodCount, WallCollision, SelfCollision, ReverseDirection, SpawnBlocks))
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 	}
@@ -43,4 +45,6 @@ func init() {
 	RootCmd.Flags().IntVarP(&ShrinkingFoodCount, "shrinking", "s", 1, "the shrinking food count")
 	RootCmd.Flags().BoolVarP(&WallCollision, "wall", "w", false, "the wall collision")
 	RootCmd.Flags().BoolVarP(&SelfCollision, "self", "n", false, "the self collision")
+	RootCmd.Flags().BoolVarP(&ReverseDirection, "reverse", "r", false, "the reverse collision")
+	RootCmd.Flags().BoolVarP(&SpawnBlocks, "spawn", "b", false, "the spawn blocks collision")
 }

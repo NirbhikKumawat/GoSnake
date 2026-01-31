@@ -16,6 +16,7 @@ type Game struct {
 	FoodCount           int
 	EnableShrinkingFood bool
 	EnablePortalFood    bool
+	SpawnBlocks         bool
 	ShrinkingFruits     []Point
 	ShrinkingFoodCount  int
 	DirectionQueue      []Point
@@ -23,6 +24,7 @@ type Game struct {
 	Blocks              []Point
 	WallCollision       bool
 	SnakeCollision      bool
+	ReverseDirection    bool
 }
 
 func absI(x int) int {
@@ -37,7 +39,7 @@ func maxI(a, b int) int {
 	}
 	return b
 }
-func NewGame(width, height, count, scount int, wallCollision, snakeCollision bool) *Game {
+func NewGame(width, height, count, scount int, wallCollision, snakeCollision, reverseDirection, spawnBlocks bool) *Game {
 	snakeHead := Point{X: width/2 - 3, Y: height / 2}
 	g := &Game{
 		Width:    width,
@@ -67,6 +69,8 @@ func NewGame(width, height, count, scount int, wallCollision, snakeCollision boo
 		FoodNearby:         true,
 		WallCollision:      wallCollision,
 		SnakeCollision:     snakeCollision,
+		ReverseDirection:   reverseDirection,
+		SpawnBlocks:        spawnBlocks,
 	}
 	g.initialPlaceFoods()
 	g.initialPlaceShrinkingFoods()
@@ -134,8 +138,15 @@ func (g *Game) Move() {
 	if check {
 		g.Score++
 		g.placeFood()
-		if g.Score%2 == 0 {
+		if g.Score%2 == 0 && g.SpawnBlocks {
 			g.placeBlocks()
+		}
+		if g.ReverseDirection {
+			g.Direction = g.getDirection()
+			for i, j := 0, len(g.Snake)-1; i < j; i, j = i+1, j-1 {
+				g.Snake[i], g.Snake[j] = g.Snake[j], g.Snake[i]
+			}
+
 		}
 		g.Food = append(g.Food[:eaten], g.Food[eaten+1:]...)
 	}
@@ -185,4 +196,17 @@ func (g *Game) selfCollision(p Point) bool {
 		}
 	}
 	return false
+}
+
+func (g *Game) getDirection() Point {
+	n := len(g.Snake)
+	if n >= 2 {
+		l := g.Snake[n-1]
+		ll := g.Snake[n-2]
+		x := l.X - ll.X
+		y := l.Y - ll.Y
+		return Point{X: x, Y: y}
+	} else {
+		return Point{X: -g.Direction.X, Y: -g.Direction.Y}
+	}
 }

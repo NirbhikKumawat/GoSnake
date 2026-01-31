@@ -31,13 +31,13 @@ func doTick() tea.Cmd {
 	})
 }
 
-func InitialModel(w, h, f, sf int, wc, sc bool) Model {
+func InitialModel(w, h, f, sf int, wc, sc, rd, sb bool) Model {
 	if w < 5 || h < 5 {
 		w = 20
 		h = 20
 	}
 	return Model{
-		game: engine.NewGame(w, h, f, sf, wc, sc),
+		game: engine.NewGame(w, h, f, sf, wc, sc, rd, sb),
 	}
 }
 func (m Model) Init() tea.Cmd {
@@ -72,7 +72,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "r":
 			if m.game.GameOver {
-				m.game = engine.NewGame(m.game.Width, m.game.Height, m.game.FoodCount, m.game.ShrinkingFoodCount, m.game.WallCollision, m.game.SnakeCollision)
+				m.game = engine.NewGame(m.game.Width, m.game.Height, m.game.FoodCount, m.game.ShrinkingFoodCount, m.game.WallCollision, m.game.SnakeCollision, m.game.ReverseDirection, m.game.SpawnBlocks)
 				return m, doTick()
 			}
 		}
