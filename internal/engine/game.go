@@ -9,6 +9,7 @@ type Game struct {
 	Height              int
 	Food                []Point
 	Snake               []Point
+	MirrorSnake         []Point
 	Direction           Point
 	GameOver            bool
 	Score               int
@@ -17,6 +18,7 @@ type Game struct {
 	EnableShrinkingFood bool
 	EnablePortalFood    bool
 	SpawnBlocks         bool
+	EnableMirrorSnake   bool
 	ShrinkingFruits     []Point
 	ShrinkingFoodCount  int
 	DirectionQueue      []Point
@@ -39,8 +41,9 @@ func maxI(a, b int) int {
 	}
 	return b
 }
-func NewGame(width, height, count, scount int, wallCollision, snakeCollision, reverseDirection, spawnBlocks bool) *Game {
-	snakeHead := Point{X: width/2 - 3, Y: height / 2}
+func NewGame(width, height, count, scount int, wallCollision, snakeCollision, reverseDirection, spawnBlocks, mirrorSnake bool) *Game {
+	snakeHead := Point{X: width/2 - 5, Y: height / 2}
+	mirrorSnakeHead := Point{X: width/2 + 5, Y: height / 2}
 	g := &Game{
 		Width:    width,
 		Height:   height,
@@ -71,6 +74,20 @@ func NewGame(width, height, count, scount int, wallCollision, snakeCollision, re
 		SnakeCollision:     snakeCollision,
 		ReverseDirection:   reverseDirection,
 		SpawnBlocks:        spawnBlocks,
+		EnableMirrorSnake:  mirrorSnake,
+	}
+	if g.EnableMirrorSnake {
+		g.MirrorSnake = []Point{
+			mirrorSnakeHead,
+			{
+				X: mirrorSnakeHead.X + 1,
+				Y: mirrorSnakeHead.Y,
+			},
+			{
+				X: mirrorSnakeHead.X + 2,
+				Y: mirrorSnakeHead.Y,
+			},
+		}
 	}
 	g.initialPlaceFoods()
 	g.initialPlaceShrinkingFoods()
@@ -95,17 +112,34 @@ func checkSnake(g *Game, point Point) bool {
 			return true
 		}
 	}
+	if g.EnableMirrorSnake {
+		for _, snakeHead := range g.MirrorSnake {
+			if snakeHead.X == point.X && snakeHead.Y == point.Y {
+				return true
+			}
+		}
+	}
 	return false
 }
 func (g *Game) Move() {
+	var mirrorNewHead Point
 	if g.GameOver {
 		return
 	}
 	newHead := Point{X: g.Snake[0].X + g.Direction.X, Y: g.Snake[0].Y + g.Direction.Y}
+	if g.EnableMirrorSnake {
+		mirrorNewHead = Point{X: g.MirrorSnake[0].X - g.Direction.X, Y: g.MirrorSnake[0].Y - g.Direction.Y}
+	}
 
 	if g.selfCollision(newHead) && !g.SnakeCollision {
 		g.GameOver = true
 		return
+	}
+	if g.EnableMirrorSnake {
+		if g.mirrorCollision(newHead, mirrorNewHead) {
+			g.GameOver = true
+			return
+		}
 	}
 	if !g.WallCollision && g.checkWallCollision(newHead) {
 		g.GameOver = true
@@ -128,9 +162,15 @@ func (g *Game) Move() {
 	if g.checkFoodNearby(newHead) {
 		g.FoodNearby = true
 	} else {
+		if g.EnableMirrorSnake {
+			if g.checkFoodNearby(mirrorNewHead) {
+				g.FoodNearby = true
+			}
+		}
 		g.FoodNearby = false
 	}
 	g.Snake = append([]Point{newHead}, g.Snake...)
+	g.MirrorSnake = append([]Point{mirrorNewHead}, g.MirrorSnake...)
 	eaten, check := eatenFood(g.Food, newHead)
 	if checkBlocks(g, newHead) {
 		g.GameOver = true
@@ -149,6 +189,14 @@ func (g *Game) Move() {
 
 		}
 		g.Food = append(g.Food[:eaten], g.Food[eaten+1:]...)
+	}
+	if g.EnableMirrorSnake {
+		eaten, check := eatenFood(g.Food, mirrorNewHead)
+		if check {
+			g.Score++
+			g.placeFood()
+			g.Food = append(g.Food[:eaten], g.Food[eaten+1:]...)
+		}
 	}
 	seaten, scheck := eatenFood(g.ShrinkingFruits, newHead)
 	if scheck {
@@ -173,6 +221,9 @@ func (g *Game) Move() {
 	}
 	if !check && !pcheck {
 		g.Snake = g.Snake[:len(g.Snake)-1]
+		if g.EnableMirrorSnake {
+			g.MirrorSnake = g.MirrorSnake[:len(g.MirrorSnake)-1]
+		}
 	}
 
 }
@@ -194,6 +245,13 @@ func (g *Game) selfCollision(p Point) bool {
 		if p.X == g.Snake[i].X && p.Y == g.Snake[i].Y {
 			return true
 		}
+	}
+	return false
+}
+
+func (g *Game) mirrorCollision(p1, p2 Point) bool {
+	if p1.X == p2.X && p1.Y == p2.Y {
+		return true
 	}
 	return false
 }

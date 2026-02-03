@@ -16,13 +16,15 @@ type Model struct {
 }
 
 var (
-	foodStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#8B0000"))
-	snakeHeaderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
-	snakeStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	nearbyStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#00008B"))
-	sfoodStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
-	portalFoodStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("15"))
-	blockStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("#8B5E3C"))
+	foodStyle              = lipgloss.NewStyle().Foreground(lipgloss.Color("#8B0000"))
+	snakeHeaderStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
+	snakeStyle             = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+	nearbyStyle            = lipgloss.NewStyle().Foreground(lipgloss.Color("#00008B"))
+	sfoodStyle             = lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
+	portalFoodStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("15"))
+	blockStyle             = lipgloss.NewStyle().Foreground(lipgloss.Color("#8B5E3C"))
+	mirrorSnakeStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFF700"))
+	mirrorSnakeHeaderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFD1DC"))
 )
 
 func doTick() tea.Cmd {
@@ -31,13 +33,13 @@ func doTick() tea.Cmd {
 	})
 }
 
-func InitialModel(w, h, f, sf int, wc, sc, rd, sb bool) Model {
+func InitialModel(w, h, f, sf int, wc, sc, rd, sb, ms bool) Model {
 	if w < 5 || h < 5 {
 		w = 20
 		h = 20
 	}
 	return Model{
-		game: engine.NewGame(w, h, f, sf, wc, sc, rd, sb),
+		game: engine.NewGame(w, h, f, sf, wc, sc, rd, sb, ms),
 	}
 }
 func (m Model) Init() tea.Cmd {
@@ -72,7 +74,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "r":
 			if m.game.GameOver {
-				m.game = engine.NewGame(m.game.Width, m.game.Height, m.game.FoodCount, m.game.ShrinkingFoodCount, m.game.WallCollision, m.game.SnakeCollision, m.game.ReverseDirection, m.game.SpawnBlocks)
+				m.game = engine.NewGame(m.game.Width, m.game.Height, m.game.FoodCount, m.game.ShrinkingFoodCount, m.game.WallCollision, m.game.SnakeCollision, m.game.ReverseDirection, m.game.SpawnBlocks, m.game.EnableMirrorSnake)
 				return m, doTick()
 			}
 		}
@@ -106,10 +108,22 @@ func (m Model) View() string {
 		char := snakeStyle.Render("⬛")
 		grid[part.Y][part.X] = char
 	}
+	if m.game.EnableMirrorSnake {
+		for _, part := range g.MirrorSnake[1:] {
+			char := mirrorSnakeStyle.Render("⬛")
+			grid[part.Y][part.X] = char
+		}
+	}
 	if !g.FoodNearby {
 		grid[g.Snake[0].Y][g.Snake[0].X] = snakeHeaderStyle.Render("⬛")
+		if m.game.EnableMirrorSnake {
+			grid[g.MirrorSnake[0].Y][g.MirrorSnake[0].X] = mirrorSnakeHeaderStyle.Render("⬛")
+		}
 	} else {
 		grid[g.Snake[0].Y][g.Snake[0].X] = nearbyStyle.Render("⬛")
+		if m.game.EnableMirrorSnake {
+			grid[g.MirrorSnake[0].Y][g.MirrorSnake[0].X] = nearbyStyle.Render("⬛")
+		}
 	}
 
 	var b strings.Builder
