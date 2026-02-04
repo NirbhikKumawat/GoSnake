@@ -36,6 +36,20 @@ func eatenFood(food []Point, point Point) (int, bool) {
 	}
 	return -1, false
 }
+func (g *Game) handleEatenFood(eaten int) {
+	g.Score++
+	g.placeFood()
+	if g.Score%2 == 0 && g.SpawnBlocks {
+		g.placeBlocks()
+	}
+	if g.ReverseDirection {
+		g.Direction = g.getDirection()
+		for i, j := 0, len(g.Snake)-1; i < j; i, j = i+1, j-1 {
+			g.Snake[i], g.Snake[j] = g.Snake[j], g.Snake[i]
+		}
+	}
+	g.Food = append(g.Food[:eaten], g.Food[eaten+1:]...)
+}
 func (g *Game) checkFoodNearby(p Point) bool {
 	px, py := p.X, p.Y
 	for _, fruit := range g.Food {

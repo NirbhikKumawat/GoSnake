@@ -83,6 +83,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 func (m Model) View() string {
 	g := m.game
+	n := len(m.game.Snake)
 	grid := make([][]string, m.game.Height)
 	for i := range grid {
 		grid[i] = make([]string, m.game.Width)
@@ -103,29 +104,29 @@ func (m Model) View() string {
 	for _, block := range g.Blocks {
 		grid[block.Y][block.X] = blockStyle.Render("⬛")
 	}
-
-	for _, part := range g.Snake[1:] {
-		char := snakeStyle.Render("⬛")
-		grid[part.Y][part.X] = char
-	}
-	if m.game.EnableMirrorSnake {
-		for _, part := range g.MirrorSnake[1:] {
-			char := mirrorSnakeStyle.Render("⬛")
+	if n > 0 {
+		for _, part := range g.Snake[1:] {
+			char := snakeStyle.Render("⬛")
 			grid[part.Y][part.X] = char
 		}
-	}
-	if !g.FoodNearby {
-		grid[g.Snake[0].Y][g.Snake[0].X] = snakeHeaderStyle.Render("⬛")
 		if m.game.EnableMirrorSnake {
-			grid[g.MirrorSnake[0].Y][g.MirrorSnake[0].X] = mirrorSnakeHeaderStyle.Render("⬛")
+			for _, part := range g.MirrorSnake[1:] {
+				char := mirrorSnakeStyle.Render("⬛")
+				grid[part.Y][part.X] = char
+			}
 		}
-	} else {
-		grid[g.Snake[0].Y][g.Snake[0].X] = nearbyStyle.Render("⬛")
-		if m.game.EnableMirrorSnake {
-			grid[g.MirrorSnake[0].Y][g.MirrorSnake[0].X] = nearbyStyle.Render("⬛")
+		if !g.FoodNearby {
+			grid[g.Snake[0].Y][g.Snake[0].X] = snakeHeaderStyle.Render("⬛")
+			if m.game.EnableMirrorSnake {
+				grid[g.MirrorSnake[0].Y][g.MirrorSnake[0].X] = mirrorSnakeHeaderStyle.Render("⬛")
+			}
+		} else {
+			grid[g.Snake[0].Y][g.Snake[0].X] = nearbyStyle.Render("⬛")
+			if m.game.EnableMirrorSnake {
+				grid[g.MirrorSnake[0].Y][g.MirrorSnake[0].X] = nearbyStyle.Render("⬛")
+			}
 		}
 	}
-
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("\nScore: %d \n", g.Score))
 	for y := 0; y < m.game.Height; y++ {

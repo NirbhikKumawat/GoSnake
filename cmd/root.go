@@ -43,7 +43,7 @@ func init() {
 	RootCmd.Flags().IntVarP(&W, "width", "W", 21, "the width of the game")
 	RootCmd.Flags().IntVarP(&H, "height", "H", 21, "the height of the game")
 	RootCmd.Flags().IntVarP(&FoodCount, "food", "f", 1, "the food count")
-	RootCmd.Flags().IntVarP(&ShrinkingFoodCount, "shrinking", "s", 1, "the shrinking food count")
+	RootCmd.Flags().IntVarP(&ShrinkingFoodCount, "shrinking", "s", 0, "the shrinking food count")
 	RootCmd.Flags().BoolVarP(&WallCollision, "wall", "w", false, "the wall collision")
 	RootCmd.Flags().BoolVarP(&SelfCollision, "self", "n", false, "the self collision")
 	RootCmd.Flags().BoolVarP(&ReverseDirection, "reverse", "r", false, "the reverse collision")

@@ -9,24 +9,24 @@ type Game struct {
 	Height              int
 	Food                []Point
 	Snake               []Point
-	MirrorSnake         []Point
 	Direction           Point
+	DirectionQueue      []Point
 	GameOver            bool
 	Score               int
 	FoodNearby          bool
 	FoodCount           int
-	EnableShrinkingFood bool
-	EnablePortalFood    bool
-	SpawnBlocks         bool
-	EnableMirrorSnake   bool
-	ShrinkingFruits     []Point
-	ShrinkingFoodCount  int
-	DirectionQueue      []Point
-	PortalFruits        [][2]Point
-	Blocks              []Point
 	WallCollision       bool
 	SnakeCollision      bool
 	ReverseDirection    bool
+	EnableMirrorSnake   bool
+	MirrorSnake         []Point
+	EnableShrinkingFood bool
+	ShrinkingFruits     []Point
+	ShrinkingFoodCount  int
+	EnablePortalFood    bool
+	PortalFruits        [][2]Point
+	SpawnBlocks         bool
+	Blocks              []Point
 }
 
 func absI(x int) int {
@@ -64,17 +64,25 @@ func NewGame(width, height, count, scount int, wallCollision, snakeCollision, re
 				Y: snakeHead.Y,
 			},
 		},
-		PortalFruits:       [][2]Point{{{snakeHead.X + 7, snakeHead.Y + 3}, {snakeHead.X + 7, snakeHead.Y - 3}}},
-		ShrinkingFoodCount: scount,
-		ShrinkingFruits:    []Point{{snakeHead.X + 7, snakeHead.Y + 5}},
-		FoodCount:          count,
-		Food:               []Point{{snakeHead.X + 7, snakeHead.Y}},
-		FoodNearby:         true,
-		WallCollision:      wallCollision,
-		SnakeCollision:     snakeCollision,
-		ReverseDirection:   reverseDirection,
-		SpawnBlocks:        spawnBlocks,
-		EnableMirrorSnake:  mirrorSnake,
+		FoodCount:         count,
+		Food:              []Point{{snakeHead.X + 7, snakeHead.Y}},
+		FoodNearby:        true,
+		WallCollision:     wallCollision,
+		SnakeCollision:    snakeCollision,
+		ReverseDirection:  reverseDirection,
+		SpawnBlocks:       spawnBlocks,
+		EnableMirrorSnake: mirrorSnake,
+	}
+	if scount > 0 {
+		g.EnableShrinkingFood = true
+	}
+	if g.EnablePortalFood {
+		g.PortalFruits = [][2]Point{{{snakeHead.X + 7, snakeHead.Y + 3}, {snakeHead.X + 7, snakeHead.Y - 3}}}
+	}
+	if g.EnableShrinkingFood {
+		g.ShrinkingFoodCount = scount
+		g.ShrinkingFruits = []Point{{snakeHead.X + 7, snakeHead.Y + 5}}
+		g.initialPlaceShrinkingFoods()
 	}
 	if g.EnableMirrorSnake {
 		g.MirrorSnake = []Point{
@@ -90,7 +98,6 @@ func NewGame(width, height, count, scount int, wallCollision, snakeCollision, re
 		}
 	}
 	g.initialPlaceFoods()
-	g.initialPlaceShrinkingFoods()
 	return g
 }
 func getEmptyCells(g *Game) []Point {
@@ -113,24 +120,25 @@ func checkSnake(g *Game, point Point) bool {
 		}
 	}
 	if g.EnableMirrorSnake {
-		for _, snakeHead := range g.MirrorSnake {
-			if snakeHead.X == point.X && snakeHead.Y == point.Y {
-				return true
-			}
+		if checkMirrorSnake(g, point) {
+			return true
 		}
 	}
 	return false
 }
 func (g *Game) Move() {
-	var mirrorNewHead Point
 	if g.GameOver {
 		return
 	}
+	if len(g.Snake) == 0 {
+		g.GameOver = true
+		return
+	}
 	newHead := Point{X: g.Snake[0].X + g.Direction.X, Y: g.Snake[0].Y + g.Direction.Y}
+	var mirrorNewHead Point
 	if g.EnableMirrorSnake {
 		mirrorNewHead = Point{X: g.MirrorSnake[0].X - g.Direction.X, Y: g.MirrorSnake[0].Y - g.Direction.Y}
 	}
-
 	if g.selfCollision(newHead) && !g.SnakeCollision {
 		g.GameOver = true
 		return
@@ -146,18 +154,7 @@ func (g *Game) Move() {
 		return
 	}
 	if g.WallCollision {
-		if newHead.X == -1 {
-			newHead.X = g.Width - 1
-		}
-		if newHead.Y == -1 {
-			newHead.Y = g.Height - 1
-		}
-		if newHead.X == g.Width {
-			newHead.X = 0
-		}
-		if newHead.Y == g.Height {
-			newHead.Y = 0
-		}
+		g.handleWallCollision(&newHead)
 	}
 	if g.checkFoodNearby(newHead) {
 		g.FoodNearby = true
@@ -169,33 +166,26 @@ func (g *Game) Move() {
 		}
 		g.FoodNearby = false
 	}
+
 	g.Snake = append([]Point{newHead}, g.Snake...)
 	g.MirrorSnake = append([]Point{mirrorNewHead}, g.MirrorSnake...)
+
 	eaten, check := eatenFood(g.Food, newHead)
 	if checkBlocks(g, newHead) {
 		g.GameOver = true
+		return
 	}
 	if check {
-		g.Score++
-		g.placeFood()
-		if g.Score%2 == 0 && g.SpawnBlocks {
-			g.placeBlocks()
-		}
-		if g.ReverseDirection {
-			g.Direction = g.getDirection()
-			for i, j := 0, len(g.Snake)-1; i < j; i, j = i+1, j-1 {
-				g.Snake[i], g.Snake[j] = g.Snake[j], g.Snake[i]
-			}
-
-		}
-		g.Food = append(g.Food[:eaten], g.Food[eaten+1:]...)
+		g.handleEatenFood(eaten)
 	}
+
 	if g.EnableMirrorSnake {
-		eaten, check := eatenFood(g.Food, mirrorNewHead)
-		if check {
+		meaten, mcheck := eatenFood(g.Food, mirrorNewHead)
+		if mcheck {
 			g.Score++
 			g.placeFood()
-			g.Food = append(g.Food[:eaten], g.Food[eaten+1:]...)
+			g.Food = append(g.Food[:meaten], g.Food[meaten+1:]...)
+			check = mcheck
 		}
 	}
 	seaten, scheck := eatenFood(g.ShrinkingFruits, newHead)
@@ -207,6 +197,7 @@ func (g *Game) Move() {
 	}
 	if len(g.Snake) == 0 {
 		g.GameOver = true
+		return
 	}
 	p, peaten, pcheck := eatenPortalFood(g.PortalFruits, newHead)
 	if pcheck {
@@ -234,12 +225,6 @@ func (g *Game) UpdateDirectionQueue(x, y int) {
 		g.DirectionQueue = append(g.DirectionQueue, Point{X: x, Y: y})
 	}
 }
-func (g *Game) checkWallCollision(p Point) bool {
-	if p.X < 0 || p.Y < 0 || p.X >= g.Width || p.Y >= g.Height {
-		return true
-	}
-	return false
-}
 func (g *Game) selfCollision(p Point) bool {
 	for i := 1; i < len(g.Snake); i++ {
 		if p.X == g.Snake[i].X && p.Y == g.Snake[i].Y {
@@ -248,14 +233,6 @@ func (g *Game) selfCollision(p Point) bool {
 	}
 	return false
 }
-
-func (g *Game) mirrorCollision(p1, p2 Point) bool {
-	if p1.X == p2.X && p1.Y == p2.Y {
-		return true
-	}
-	return false
-}
-
 func (g *Game) getDirection() Point {
 	n := len(g.Snake)
 	if n >= 2 {
